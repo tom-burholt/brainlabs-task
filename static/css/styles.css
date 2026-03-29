@@ -1,0 +1,21 @@
+/* Global Design Features */
+:root {
+    --primary-font: 'Roberto', sans-serif;
+    --app-bg-color: #f4f6f9;
+}
+
+body {
+    font-family: var(--primary-font);
+    background-color: var(--app-bg-color);
+    margin: 0;
+}
+
+.v-application {
+    background-color: var(--app-bg-color) !important;
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+}

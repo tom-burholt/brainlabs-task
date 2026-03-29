@@ -1,0 +1,145 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Manager</title>
+    
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@3.x/dist/vuetify.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        {% verbatim %}
+        <v-app>
+            <v-main>
+                <v-container>
+                    <h1>Campaign Budget Manager</h1>
+                    
+                    <v-card class="pa-5 mb-5" elevation="2">
+                        <v-card-title>Add New Campaign</v-card-title>
+                        <v-form @submit.prevent="addCampaign">
+                            <v-row>
+                                <v-col cols="12" md="3">
+                                    <v-text-field v-model="newCampaign.name" label="Name" required></v-text-field>
+                                </v-col>
+                                <v-col cols="12" md="3">
+                                    <v-text-field v-model="newCampaign.budget" label="Budget" type="number" required></v-text-field>
+                                </v-col>
+                                <v-col cols="12" md="3">
+                                    <v-text-field v-model="newCampaign.spend" label="Spend" type="number" required></v-text-field>
+                                </v-col>
+                                <v-col cols="12" md="3">
+                                    <v-select v-model="newCampaign.status" :items="statusOptions" label="Status" required></v-select>
+                                </v-col>
+                            </v-row>
+                            <v-btn color="primary" type="submit">Add Campaign</v-btn>
+                        </v-form>
+                    </v-card>
+
+                    <v-card elevation="2">
+                        <v-data-table
+                            :headers="headers"
+                            :items="campaigns"
+                            class="elevation-1"
+                        >
+                            <template v-slot:item.budget="{ value }">
+                                {{ formatCurrency(value) }}
+                            </template>
+                            
+                            <template v-slot:item.spend="{ value }">
+                                {{ formatCurrency(value) }}
+                            </template>
+
+                            <template v-slot:item.remaining="{ item }">
+                                {{ formatCurrency(item.budget - item.spend) }}
+                            </template>
+
+                            <template v-slot:item.status="{ value }">
+                                <v-chip :color="getStatusColor(value)" size="small" class="text-uppercase font-weight-bold">
+                                    {{ value }}
+                                </v-chip>
+                            </template>
+                        </v-data-table>
+                    </v-card>
+                </v-container>
+            </v-main>
+        </v-app>
+        {% endverbatim %}
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@3.x/dist/vuetify.min.js"></script>
+
+    <script>
+    const { createApp } = Vue;
+    const { createVuetify } = Vuetify;
+
+    const vuetify = createVuetify();
+
+    createApp({
+        data() {
+            return {
+                headers: [
+                    { title: 'Name', align: 'start', key: 'name' },
+                    { title: 'Budget', key: 'budget' },
+                    { title: 'Spend', key: 'spend' },
+                    { title: 'Status', key: 'status' }
+                ],
+           
+                campaigns: [], 
+                newCampaign: { name: '', budget: '', spend: '', status: 'Active' },
+                statusOptions: ['Active', 'Paused', 'Completed']
+            }
+        },
+        mounted() {
+            this.fetchCampaigns();
+        },
+        methods: {
+            fetchCampaigns() {
+                fetch('/api/campaigns/')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.campaigns = data;
+                    });
+            },
+            addCampaign() {
+                if (this.newCampaign.name && this.newCampaign.budget && this.newCampaign.spend) {
+                    
+                    fetch('/api/campaigns/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(this.newCampaign)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.campaigns.push(data);
+                        
+                        this.newCampaign = { name: '', budget: '', spend: '', status: 'Active' };
+                    });
+                }
+            },
+            formatCurrency(value) {
+                return new Intl.NumberFormat('en-GB', { 
+                    style: 'currency', 
+                    currency: 'GBP',
+                    minimumFractionDigits: 0
+                }).format(value);
+            },
+            getStatusColor(status) {
+                if (status === 'Active') return 'green';
+                if (status === 'Paused') return 'grey';
+                if (status === 'Completed') return 'blue';
+                return 'default';
+            }
+        }
+    }).use(vuetify).mount('#app');
+</script>
+
+</body>
+</html>
